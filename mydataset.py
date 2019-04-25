@@ -27,6 +27,7 @@ class MyDataset(Dataset):
 
         self.name2index = {'Car': 0, 'Pedestrian': 1, 'Cyclist': 2, 'TrafficSign': 3, 'TrafficSignal': 4}
         self.index2name = { val:key for key,val in self.name2index.items()}
+        self.classnames = set(self.name2index.keys())
 
         data = {'img_path': [entry.img_path for entry in self.idxs],
                 'sub_idx': [entry.sub_idx for entry in self.idxs],

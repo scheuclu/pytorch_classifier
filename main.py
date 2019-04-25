@@ -36,11 +36,12 @@ import pandas as pd
 
 
 SIMNAME = 'test1'
+PORT = 6065
 
 
 """ Delete all figures """
 from visdom import Visdom
-viz = Visdom(port=6065)
+viz = Visdom(port=PORT)
 for env in viz.get_env_list():
     viz.delete_env(env)
 
@@ -125,23 +126,23 @@ for epoch in range(num_epochs):
         running_corrects = 0
         running_wrongs = 0
 
+        running_class_stats = {classname: {'TP':0, 'FP':0, 'TN':0, 'FN':0} for classname in dataset_val.classnames}
+
+
         running_class_corrects = {i: 0 for i in range(5)}
         running_class_wrongs = {i: 0 for i in range(5)}
 
         # Iterate over data once.
         batchidx = 0
         for inputs, labels in tqdm(dataloaders[phase]):
+        #for i_step in tqdm(range(steps_per_epoch), desc='step'):
+        #    inputs, labels = next(dataloaders[phase])
 
             batchidx += 1
             if batchidx>10:
                 print(" ")
                 break
-
-        #for i_step in tqdm(range(steps_per_epoch), desc='step'):
-        #    inputs, labels = next(dataloaders[phase])
-
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+            inputs, labels = inputs.to(device), labels.to(device)
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -164,9 +165,20 @@ for epoch in range(num_epochs):
             running_wrongs += torch.sum(preds != labels.data)
             #extended statistics
             for gt in range(5):
-                gt_preds = preds[labels == gt]
-                running_class_corrects[gt] += torch.sum(gt_preds == gt)
-                running_class_wrongs[gt] += torch.sum(gt_preds != gt)
+                classname = dataset_val.index2name[gt]
+
+
+                pos_preds = (preds==gt)
+                neg_preds = (preds!=gt)
+
+
+                running_class_stats[classname]['TP'] += int(torch.sum( (preds == gt) & (labels == gt)))
+                running_class_stats[classname]['TN'] += int(torch.sum( (preds != gt) & (labels != gt)))
+                running_class_stats[classname]['FP'] += int(torch.sum( (preds == gt) & (labels != gt)))
+                running_class_stats[classname]['FN'] += int(torch.sum( (preds != gt) & (labels == gt)))
+
+                ###running_class_corrects[gt] += torch.sum(gt_preds == gt)
+                ###running_class_wrongs[gt] += torch.sum(gt_preds != gt)
 
 
         epoch_loss = running_loss / len(dataloaders[phase])
@@ -174,16 +186,33 @@ for epoch in range(num_epochs):
 
         class_acc = {i: float(running_class_corrects[i]) / (float(running_class_corrects[i]) + float(running_class_wrongs[i]) + 1e-6 ) for i in range(5)}
 
-
+        """ Plot statistics to visdom """
         plotter_acc.plot('acc', phase, 'acc', epoch, epoch_acc)
         plotter_loss.plot(var_name='loss', split_name=phase, title_name='loss', x=epoch, y=epoch_loss)
+        plotter_loss.plot(var_name='LR', split_name='LR', title_name='LR', x=epoch, y=optimizer.param_groups[0]['lr'])
+        plotter_acc.plot(var_name='LR', split_name='LR', title_name='LR', x=epoch, y=optimizer.param_groups[0]['lr'])
 
         print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
         for key, val in class_acc.items():
             print(key, val)
             classname = dataset_val.index2name[key]
+            TP = running_class_stats[classname]['TP']
+            TN = running_class_stats[classname]['TN']
+            FP = running_class_stats[classname]['FP']
+            FN = running_class_stats[classname]['FN']
+            class_acc = round(float((TP+TN)/(TP+TN+FP+FN+1e-3)), 2)
+            class_prec = round(float(TP/(TP+FP+1e-3)), 2)
+            class_recall = round(float(TP/(TP+FN+1e-3)), 2)
+            print(TP,TN,FP,FN,'ooo')
+            print(class_acc, class_prec, class_recall, "---")
+
             #plotter_acc.plot(var_name=key, split_name=phase, title_name='class_acc', x=epoch, y=val)
-            plotter_acc.plot(var_name='acc_'+phase, split_name=classname, title_name='class_acc', x=epoch, y=val)
+            plotter_acc.plot(var_name='acc_' + phase, split_name=classname, title_name='class_acc', x=epoch,
+                             y=class_acc)
+            plotter_acc.plot(var_name='prec_' + phase, split_name=classname, title_name='class_prec', x=epoch,
+                             y=class_prec)
+            plotter_acc.plot(var_name='recall_' + phase, split_name=classname, title_name='class_recall', x=epoch,
+                             y=class_recall)
 
 
         #reshuffle dataset
