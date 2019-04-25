@@ -16,34 +16,36 @@ import torchvision
 from torchvision import datasets, models, transforms
 import matplotlib.pyplot as plt
 from tqdm import tqdm as tqdm
-
 from mydataset import MyDataset
 from plots import VisdomLinePlotter
-
 import time
 import copy
-
 import py3nvml
 ngpus = py3nvml.grab_gpus(num_gpus=1, gpu_fraction=0.95, gpu_select=range(1,8))
 
 # Ignore warnings
 import warnings
 warnings.filterwarnings("ignore")
-
 plt.ion()   # interactive mode
 import pickle
+from easydict import EasyDict as edict
 import pandas as pd
 
+from configs import configs
 
-SIMNAME = 'test1'
+
+#SIMNAME = 'first_long_train'
 PORT = 6065
+CONFIG = 'long_train_0'
+opts = edict(configs[CONFIG])
+
 
 
 """ Delete all figures """
 from visdom import Visdom
 viz = Visdom(port=PORT)
-for env in viz.get_env_list():
-    viz.delete_env(env)
+# for env in viz.get_env_list():
+viz.delete_env(opts.train_identifier)
 
 import torch.multiprocessing as multiprocessing
 from torch._C import _set_worker_signal_handlers, _update_worker_pids, \
@@ -87,8 +89,8 @@ device = 'cuda:0'
 model = model.to(device)
 
 """ optimizer """
-optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+optimizer = optim.SGD(model.parameters(), lr=opts.optimizer.lr, momentum=opts.optimizer.momentum)
+scheduler = lr_scheduler.StepLR(optimizer, step_size=opts.lr_scheduler.step_size, gamma=opts.lr_scheduler.gamma)
 criterion = nn.CrossEntropyLoss()
 
 """ Model training"""
@@ -101,8 +103,7 @@ best_acc = -float('inf')
 
 
 
-plotter_acc  = VisdomLinePlotter(env_name='acc')
-plotter_loss = VisdomLinePlotter(env_name='loss')
+plotter  = VisdomLinePlotter(env_name=opts.train_identifier)
 
 
 batch_idx_train = 0
@@ -138,10 +139,11 @@ for epoch in range(num_epochs):
         #for i_step in tqdm(range(steps_per_epoch), desc='step'):
         #    inputs, labels = next(dataloaders[phase])
 
-            batchidx += 1
-            if batchidx>10:
-                print(" ")
-                break
+            # batchidx += 1
+            # if batchidx>10:
+            #     print(" ")
+            #     break
+
             inputs, labels = inputs.to(device), labels.to(device)
 
             # zero the parameter gradients
@@ -166,19 +168,11 @@ for epoch in range(num_epochs):
             #extended statistics
             for gt in range(5):
                 classname = dataset_val.index2name[gt]
-
-
-                pos_preds = (preds==gt)
-                neg_preds = (preds!=gt)
-
-
                 running_class_stats[classname]['TP'] += int(torch.sum( (preds == gt) & (labels == gt)))
                 running_class_stats[classname]['TN'] += int(torch.sum( (preds != gt) & (labels != gt)))
                 running_class_stats[classname]['FP'] += int(torch.sum( (preds == gt) & (labels != gt)))
                 running_class_stats[classname]['FN'] += int(torch.sum( (preds != gt) & (labels == gt)))
 
-                ###running_class_corrects[gt] += torch.sum(gt_preds == gt)
-                ###running_class_wrongs[gt] += torch.sum(gt_preds != gt)
 
 
         epoch_loss = running_loss / len(dataloaders[phase])
@@ -187,10 +181,10 @@ for epoch in range(num_epochs):
         class_acc = {i: float(running_class_corrects[i]) / (float(running_class_corrects[i]) + float(running_class_wrongs[i]) + 1e-6 ) for i in range(5)}
 
         """ Plot statistics to visdom """
-        plotter_acc.plot('acc', phase, 'acc', epoch, epoch_acc)
-        plotter_loss.plot(var_name='loss', split_name=phase, title_name='loss', x=epoch, y=epoch_loss)
-        plotter_loss.plot(var_name='LR', split_name='LR', title_name='LR', x=epoch, y=optimizer.param_groups[0]['lr'])
-        plotter_acc.plot(var_name='LR', split_name='LR', title_name='LR', x=epoch, y=optimizer.param_groups[0]['lr'])
+        plotter.plot('acc', phase, 'acc', epoch, epoch_acc)
+        plotter.plot(var_name='loss', split_name=phase, title_name='loss', x=epoch, y=epoch_loss)
+        plotter.plot(var_name='LR', split_name='LR', title_name='LR', x=epoch, y=optimizer.param_groups[0]['lr'])
+        plotter.plot(var_name='LR', split_name='LR', title_name='LR', x=epoch, y=optimizer.param_groups[0]['lr'])
 
         print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
         for key, val in class_acc.items():
@@ -207,22 +201,19 @@ for epoch in range(num_epochs):
             print(class_acc, class_prec, class_recall, "---")
 
             #plotter_acc.plot(var_name=key, split_name=phase, title_name='class_acc', x=epoch, y=val)
-            plotter_acc.plot(var_name='acc_' + phase, split_name=classname, title_name='class_acc', x=epoch,
+            plotter.plot(var_name='acc_' + phase, split_name=classname, title_name='class_acc', x=epoch,
                              y=class_acc)
-            plotter_acc.plot(var_name='prec_' + phase, split_name=classname, title_name='class_prec', x=epoch,
+            plotter.plot(var_name='prec_' + phase, split_name=classname, title_name='class_prec', x=epoch,
                              y=class_prec)
-            plotter_acc.plot(var_name='recall_' + phase, split_name=classname, title_name='class_recall', x=epoch,
+            plotter.plot(var_name='recall_' + phase, split_name=classname, title_name='class_recall', x=epoch,
                              y=class_recall)
-
-
-        #reshuffle dataset
 
         # deep copy the model
         if phase == 'val' and epoch_acc > best_acc:
             best_acc = epoch_acc
             best_model_wts = copy.deepcopy(model.state_dict())
             # save the currently best model to disk
-            torch.save(best_model_wts, './checkpoints/'+SIMNAME+'.'+str(epoch))
+            torch.save(best_model_wts, './checkpoints/'+opts.train_identifier+'.'+str(epoch))
             print("Saved new best checkpoint to disk")
 
 
