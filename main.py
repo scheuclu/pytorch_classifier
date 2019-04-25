@@ -38,6 +38,12 @@ import pandas as pd
 SIMNAME = 'test1'
 
 
+""" Delete all figures """
+from visdom import Visdom
+viz = Visdom(port=6065)
+for env in viz.get_env_list():
+    viz.delete_env(env)
+
 import torch.multiprocessing as multiprocessing
 from torch._C import _set_worker_signal_handlers, _update_worker_pids, \
     _remove_worker_pids, _error_if_any_worker_fails
@@ -68,6 +74,7 @@ dataset_loader_val = torch.utils.data.DataLoader(dataset_val,
                                              num_workers=40)
 
 dataloaders={
+
     'train': dataset_loader_train,
     'val': dataset_loader_val
 }
@@ -79,7 +86,7 @@ device = 'cuda:0'
 model = model.to(device)
 
 """ optimizer """
-optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 criterion = nn.CrossEntropyLoss()
 
@@ -89,7 +96,7 @@ steps_per_epoch = 40
 since = time.time()
 
 best_model_wts = copy.deepcopy(model.state_dict())
-best_acc = 0.0
+best_acc = -float('inf')
 
 
 
@@ -122,8 +129,13 @@ for epoch in range(num_epochs):
         running_class_wrongs = {i: 0 for i in range(5)}
 
         # Iterate over data once.
+        batchidx = 0
         for inputs, labels in tqdm(dataloaders[phase]):
 
+            batchidx += 1
+            if batchidx>10:
+                print(" ")
+                break
 
         #for i_step in tqdm(range(steps_per_epoch), desc='step'):
         #    inputs, labels = next(dataloaders[phase])
@@ -162,17 +174,16 @@ for epoch in range(num_epochs):
 
         class_acc = {i: float(running_class_corrects[i]) / (float(running_class_corrects[i]) + float(running_class_wrongs[i]) + 1e-6 ) for i in range(5)}
 
-        if phase == 'train':
-            plotter_acc.plot('acc', 'train', 'acc', epoch, epoch_acc)
-            plotter_loss.plot('loss', 'train', 'loss', epoch, epoch_loss)
-        else:
-            plotter_acc.plot('acc', 'val', 'acc', epoch, epoch_acc)
-            plotter_loss.plot('loss', 'val', 'loss', epoch, epoch_loss)
 
-        print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-            phase, epoch_loss, epoch_acc))
+        plotter_acc.plot('acc', phase, 'acc', epoch, epoch_acc)
+        plotter_loss.plot(var_name='loss', split_name=phase, title_name='loss', x=epoch, y=epoch_loss)
+
+        print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
         for key, val in class_acc.items():
             print(key, val)
+            classname = dataset_val.index2name[key]
+            #plotter_acc.plot(var_name=key, split_name=phase, title_name='class_acc', x=epoch, y=val)
+            plotter_acc.plot(var_name='acc_'+phase, split_name=classname, title_name='class_acc', x=epoch, y=val)
 
 
         #reshuffle dataset
@@ -182,7 +193,7 @@ for epoch in range(num_epochs):
             best_acc = epoch_acc
             best_model_wts = copy.deepcopy(model.state_dict())
             # save the currently best model to disk
-            torch.save(best_model_wts, './checkpoints')
+            torch.save(best_model_wts, './checkpoints/'+SIMNAME+'.'+str(epoch))
             print("Saved new best checkpoint to disk")
 
 

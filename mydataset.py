@@ -26,8 +26,10 @@ class MyDataset(Dataset):
             self.idxs = pickle.load(f)
 
         self.name2index = {'Car': 0, 'Pedestrian': 1, 'Cyclist': 2, 'TrafficSign': 3, 'TrafficSignal': 4}
+        self.index2name = { val:key for key,val in self.name2index.items()}
 
         data = {'img_path': [entry.img_path for entry in self.idxs],
+                'sub_idx': [entry.sub_idx for entry in self.idxs],
                 'classname': [entry.classname for entry in self.idxs],
                 'left': [entry.left for entry in self.idxs],
                 'top': [entry.top for entry in self.idxs],
@@ -100,3 +102,15 @@ class MyDataset(Dataset):
         label = torch.tensor(self.name2index[entry.classname], dtype=torch.long)
 
         return (img, label)
+
+    def get_item_eval(self, idx):
+        entry = self.data.iloc[idx]
+        img = PIL.Image.open(entry.img_path)
+        # left, upper, right, and lower
+        img = img.crop(box=[entry.left, entry.top, entry.right, entry.bottom])
+        img = self.transformer(img)
+        # label = torch.eye(4)[self.name2index[entry.classname]]
+        # label = torch.empty(3, dtype=torch.long)
+        label = torch.tensor(self.name2index[entry.classname], dtype=torch.long)
+
+        return (entry, img, label)
