@@ -46,13 +46,15 @@ parser = argparse.ArgumentParser(description='Train pytorch classifier.')
 
 parser.add_argument('--config',
                     type=str,
-                    default='long_train_1',
+                    default='debug',
                     help='Name of configuration')
 
 parser.add_argument('--port',
                     type=int,
                     default='6065',
                     help='Port for visdom usage')
+
+
 
 args = parser.parse_args()
 opts = edict(configs[args.config])
@@ -92,13 +94,17 @@ dataloaders={
     'val': dataset_loader_val
 }
 
-dataset_val.classnames
 """ ------------------------------------------------------------------------- """
 
 
 """ ------------------------------------------------------------------------- """
 """ Model, Optimizer, Scheduler"""
-model = models.squeezenet.SqueezeNet(num_classes=5)
+if opts.model == 'SqueezeNet':
+    model = models.squeezenet.SqueezeNet(num_classes=5)
+elif opts.model == 'DenseNet161':
+    model = models.densenet161(pretrained=True)
+else:
+    raise ValueError("model not supported",opts.model)
 #device = torch.device("cuda:6" if torch.cuda.is_available() else "cpu")
 device = 'cuda:0'
 model = model.to(device)
@@ -127,11 +133,11 @@ for epoch in range(num_epochs):
 
     for phase in ['train', 'val']:
         running_class_stats, epoch_loss, epoch_acc, class_acc =\
-            run_epoch(phase, model, criterion, optimizer, scheduler, dataloaders[phase], device, dataset_val.classnames, dataset_val.index2name)
+            run_epoch(phase, model, criterion, optimizer, scheduler, dataloaders[phase], device)
 
         lr = optimizer.param_groups[0]['lr']
         plot_epoch_end(plotter=plotter, phase=phase, epoch=epoch, epoch_acc=epoch_acc, epoch_loss=epoch_loss,
-                       lr=lr, running_class_stats=running_class_stats, index2name=dataset_val.index2name)
+                       lr=lr, running_class_stats=running_class_stats)
 
         # deep copy the model
         if phase == 'val' and epoch_acc > best_acc:

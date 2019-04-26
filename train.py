@@ -1,8 +1,9 @@
 
 import torch
 from tqdm import tqdm
+from configs import classnames, index2name
 
-def run_epoch(phase, model, criterion, optimizer, scheduler, dataloader, device, classnames, index2name):
+def run_epoch(phase, model, criterion, optimizer, scheduler, dataloader, device):
 
         print(phase.upper())
         if phase == 'train':
@@ -27,10 +28,10 @@ def run_epoch(phase, model, criterion, optimizer, scheduler, dataloader, device,
             # for i_step in tqdm(range(steps_per_epoch), desc='step'):
             #    inputs, labels = next(dataloaders[phase])
 
-            # batchidx += 1
-            # if batchidx > 10:
-            #     print(" ")
-            #     break
+            batchidx += 1
+            if batchidx > 10:
+                print(" ")
+                break
 
             inputs, labels = inputs.to(device), labels.to(device)
 
@@ -47,7 +48,9 @@ def run_epoch(phase, model, criterion, optimizer, scheduler, dataloader, device,
                 # backward + optimize only if in training phase
                 if phase == 'train':
                     loss.backward()
+                    #before = list(model.parameters())[-2].sum()
                     optimizer.step()
+                    #after = list(model.parameters())[-2].sum()
 
             # statistics
             running_loss += loss.item() * inputs.size(0)

@@ -7,6 +7,10 @@ from collections import namedtuple
 from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, models, transforms
 import PIL
+from sklearn.utils import shuffle
+
+
+from configs import classnames, index2name, name2index
 
 
 class MyDataset(Dataset):
@@ -25,9 +29,7 @@ class MyDataset(Dataset):
         with open(pickle_file, 'rb') as f:
             self.idxs = pickle.load(f)
 
-        self.name2index = {'Car': 0, 'Pedestrian': 1, 'Cyclist': 2, 'TrafficSign': 3, 'TrafficSignal': 4}
-        self.index2name = { val:key for key,val in self.name2index.items()}
-        self.classnames = set(self.name2index.keys())
+
 
         data = {'img_path': [entry.img_path for entry in self.idxs],
                 'sub_idx': [entry.sub_idx for entry in self.idxs],
@@ -49,12 +51,13 @@ class MyDataset(Dataset):
         self.balance_data()
         del self.idxs
         del data
+        self.data = shuffle(self.data)
 
         dividor = len(self.data) >> 2
         if mode == 'train':
             ###self.data = self.data.iloc[400:1000]
             self.data = self.data.iloc[dividor:]
-        else:
+        elif mode=='val':
             self.data = self.data.iloc[:dividor]
             ###self.data = self.data.iloc[:400]
 
@@ -100,7 +103,7 @@ class MyDataset(Dataset):
         img = self.transformer(img)
         # label = torch.eye(4)[self.name2index[entry.classname]]
         # label = torch.empty(3, dtype=torch.long)
-        label = torch.tensor(self.name2index[entry.classname], dtype=torch.long)
+        label = torch.tensor(name2index[entry.classname], dtype=torch.long)
 
         return (img, label)
 
@@ -112,6 +115,6 @@ class MyDataset(Dataset):
         img = self.transformer(img)
         # label = torch.eye(4)[self.name2index[entry.classname]]
         # label = torch.empty(3, dtype=torch.long)
-        label = torch.tensor(self.name2index[entry.classname], dtype=torch.long)
+        label = torch.tensor(name2index[entry.classname], dtype=torch.long)
 
         return (entry, img, label)

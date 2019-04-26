@@ -1,6 +1,6 @@
 from visdom import Visdom
 import numpy as np
-
+from configs import index2name, name2index
 
 class VisdomLinePlotter(object):
     """Plots to Visdom"""
@@ -21,7 +21,7 @@ class VisdomLinePlotter(object):
 
 
 
-def plot_epoch_end(plotter, phase, epoch, epoch_acc, epoch_loss, lr, running_class_stats, index2name):
+def plot_epoch_end(plotter, phase, epoch, epoch_acc, epoch_loss, lr, running_class_stats):
     """ Plot statistics to visdom """
     plotter.plot('acc', phase, 'acc', epoch, epoch_acc)
     plotter.plot(var_name='loss', split_name=phase, title_name='loss', x=epoch, y=epoch_loss)
