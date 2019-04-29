@@ -10,7 +10,8 @@ configs={
 
     'debug':{
         'train_identifier': 'debug',
-        'model': 'DenseNet161',
+        'model': 'SqueezeNet',
+        'batchsize': 100,
         'port': 6065,
         'optimizer': {
             'lr': 0.1,
@@ -38,7 +39,7 @@ configs={
     },
     'long_train_1': {
         'train_identifier': 'long_train_1',
-        'model': 'SqueezeNet',
+        'model': 'ResNet18',
         'port': 6065,
         'optimizer': {
             'lr': 0.1,
@@ -46,7 +47,39 @@ configs={
         },
         'lr_scheduler': {
             'type': 'StepLR',
-            'step_size': 7,
+            'step_size': 10,
+            'gamma': 0.5
+        }
+    },
+    'resnet_set_0': {
+        'train_identifier': 'resnet_set_0',
+        'model': 'ResNet18',
+        'batchsize': 300,
+        'cross_val_phase': 0,
+        'port': 6065,
+        'optimizer': {
+            'lr': 0.1,
+            'momentum': 0.9
+        },
+        'lr_scheduler': {
+            'type': 'StepLR',
+            'step_size': 10,
+            'gamma': 0.5
+        }
+    },
+    'resnet_set_1': {
+        'train_identifier': 'resnet_set_1',
+        'model': 'ResNet18',
+        'batchsize': 100,
+        'cross_val_phase': 1,
+        'port': 6065,
+        'optimizer': {
+            'lr': 0.1,
+            'momentum': 0.9
+        },
+        'lr_scheduler': {
+            'type': 'StepLR',
+            'step_size': 10,
             'gamma': 0.5
         }
     }

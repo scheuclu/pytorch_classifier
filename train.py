@@ -28,10 +28,10 @@ def run_epoch(phase, model, criterion, optimizer, scheduler, dataloader, device)
             # for i_step in tqdm(range(steps_per_epoch), desc='step'):
             #    inputs, labels = next(dataloaders[phase])
 
-            batchidx += 1
-            if batchidx > 10:
-                print(" ")
-                break
+            # batchidx += 1
+            # if batchidx > 100:
+            #     print(" ")
+            #     break
 
             inputs, labels = inputs.to(device), labels.to(device)
 
