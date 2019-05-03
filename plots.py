@@ -1,6 +1,6 @@
 from visdom import Visdom
 import numpy as np
-from configs import index2name, name2index
+#from configs import index2name, name2index
 
 class VisdomLinePlotter(object):
     """Plots to Visdom"""
@@ -32,7 +32,7 @@ def plot_epoch_end(plotter, phase, epoch, epoch_acc, epoch_loss, lr, running_cla
     # for key, val in class_acc.items():
     #     #print(key, val)
     #     classname = dataset_val.index2name[key]
-    for classname in index2name.values():
+    for classname in running_class_stats.keys():
         TP = running_class_stats[classname]['TP']
         TN = running_class_stats[classname]['TN']
         FP = running_class_stats[classname]['FP']

@@ -1,9 +1,12 @@
 
 import torch
 from tqdm import tqdm
-from configs import classnames, index2name
+#from configs import classnames, index2name
 
 def run_epoch(phase, model, criterion, optimizer, scheduler, dataloader, device):
+
+        class_to_idx = dataloader.dataset.class_to_idx
+        idx_to_class = {val: key for key, val in class_to_idx.items()}
 
         print(phase.upper())
         if phase == 'train':
@@ -13,11 +16,11 @@ def run_epoch(phase, model, criterion, optimizer, scheduler, dataloader, device)
             model.eval()  # Set model to evaluate mode
 
         running_loss = 0.0
-        running_corrects = 0
-        running_wrongs = 0
+        running_corrects = 0.0
+        running_wrongs = 0.0
 
         running_class_stats = {classname: {'TP': 0, 'FP': 0, 'TN': 0, 'FN': 0, 'num_preds': 0, 'num_gt': 0} for classname in
-                               classnames}
+                               dataloader.dataset.classes}
 
         running_class_corrects = {i: 0 for i in range(5)}
         running_class_wrongs = {i: 0 for i in range(5)}
@@ -58,7 +61,7 @@ def run_epoch(phase, model, criterion, optimizer, scheduler, dataloader, device)
             running_wrongs += torch.sum(preds != labels.data)
             # extended statistics
             for gt in range(5):
-                classname = index2name[gt]
+                classname = idx_to_class[gt]
                 running_class_stats[classname]['TP'] += int(torch.sum((preds == gt) & (labels == gt)))
                 running_class_stats[classname]['TN'] += int(torch.sum((preds != gt) & (labels != gt)))
                 running_class_stats[classname]['FP'] += int(torch.sum((preds == gt) & (labels != gt)))
