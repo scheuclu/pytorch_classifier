@@ -1,87 +1,39 @@
+from local_configs.train_config import TrainConfig
+import local_configs.numclass_5_configs as numclass_5_configs
+import local_configs.numclass_6_configs as numclass_6_configs
 
-classnames = ['Car', 'Pedestrian', 'Cyclist', 'TrafficSign', 'TrafficSignal']
 
-name2index = {'Car': 0, 'Pedestrian': 1, 'Cyclist': 2, 'TrafficSign': 3, 'TrafficSignal': 4}
-
-index2name = { val:key for key, val in name2index.items()}
-
+debug = {
+    'train_identifier': 'debug',
+    'model': 'ResNet18',
+    'cross_val_phase': 0,
+    'batchsize': 500,
+    'cross_val_phase': 1,
+    'port': 6065,
+    'optimizer': {
+        'lr': 0.1,
+        'momentum': 0.9
+    },
+    'lr_scheduler': {
+        'type': 'StepLR',
+        'step_size': 10,
+        'gamma': 0.5
+    }
+}
 
 configs={
-
-    'debug':{
-        'train_identifier': 'debug',
-        'model': 'SqueezeNet',
-        'batchsize': 100,
-        'port': 6065,
-        'optimizer': {
-            'lr': 0.1,
-            'momentum': 0.9
-        },
-        'lr_scheduler':{
-            'type': 'StepLR',
-            'step_size': 7,
-            'gamma': 0.1
-        }
-    },
-    'long_train_0': {
-        'train_identifier': 'long_train_0',
-        'model': 'SqueezeNet',
-        'port': 6065,
-        'optimizer': {
-            'lr': 10.0,
-            'momentum': 0.9
-        },
-        'lr_scheduler': {
-            'type': 'StepLR',
-            'step_size': 7,
-            'gamma': 0.1
-        }
-    },
-    'long_train_1': {
-        'train_identifier': 'long_train_1',
-        'model': 'ResNet18',
-        'port': 6065,
-        'optimizer': {
-            'lr': 0.1,
-            'momentum': 0.9
-        },
-        'lr_scheduler': {
-            'type': 'StepLR',
-            'step_size': 10,
-            'gamma': 0.5
-        }
-    },
-    'resnet_set_0': {
-        'train_identifier': 'resnet_set_0',
-        'model': 'ResNet18',
-        'batchsize': 300,
-        'cross_val_phase': 0,
-        'port': 6065,
-        'optimizer': {
-            'lr': 0.1,
-            'momentum': 0.9
-        },
-        'lr_scheduler': {
-            'type': 'StepLR',
-            'step_size': 10,
-            'gamma': 0.5
-        }
-    },
-    'resnet_set_1': {
-        'train_identifier': 'resnet_set_1',
-        'model': 'ResNet18',
-        'batchsize': 100,
-        'cross_val_phase': 1,
-        'port': 6065,
-        'optimizer': {
-            'lr': 0.1,
-            'momentum': 0.9
-        },
-        'lr_scheduler': {
-            'type': 'StepLR',
-            'step_size': 10,
-            'gamma': 0.5
-        }
-    }
-
+    "debug": TrainConfig(debug),
+    "long_train_0" : TrainConfig(numclass_5_configs.long_train_0),
+    "long_train_1" : TrainConfig(numclass_5_configs.long_train_1),
+    "resnet_set_0" : TrainConfig(numclass_5_configs.resnet_set_0),
+    "resnet_set_1" : TrainConfig(numclass_5_configs.resnet_set_1),
+    "densenet169_set_0" : TrainConfig(numclass_5_configs.densenet169_set_0),
+    "densenet169_set_1" : TrainConfig(numclass_5_configs.densenet169_set_1),
+    "squeezenet_0_withother": TrainConfig(numclass_6_configs.squeezenet_0_withother),
+    "squeezenet_1_withother": TrainConfig(numclass_6_configs.squeezenet_1_withother),
+    "resnet_set_0_withother": TrainConfig(numclass_6_configs.resnet_set_0_withother),
+    "resnet_set_1_withother": TrainConfig(numclass_6_configs.resnet_set_1_withother),
+    "densenet169_set_0_withother": TrainConfig(numclass_6_configs.densenet169_set_0_withother),
+    "densenet169_set_1_withother": TrainConfig(numclass_6_configs.densenet169_set_1_withother),
 }
+

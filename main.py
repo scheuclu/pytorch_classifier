@@ -31,7 +31,7 @@ parser = argparse.ArgumentParser(description='Train pytorch classifier.')
 
 parser.add_argument('--config',
                     type=str,
-                    default='debug',
+                    default='densenet169_set_0_withother',
                     help='Name of configuration')
 
 parser.add_argument('--port',
@@ -39,9 +39,18 @@ parser.add_argument('--port',
                     default='6065',
                     help='Port for visdom usage')
 
+parser.add_argument('--numclasses',
+                    type=int,
+                    default='6',
+                    help='Number of classes that the network can differentiate')
+
 
 args = parser.parse_args()
-opts = edict(configs[args.config])
+#opts = edict(configs[args.config])
+opts = configs[args.config]
+
+import os
+#if not os.path.isdir()
 
 
 """ Delete all figures """
@@ -101,33 +110,27 @@ dataloaders={
 
 """ Model, Optimizer, Scheduler"""
 if opts.model == 'SqueezeNet':
-
     model = models.squeezenet1_0(pretrained=True)
-    model.fc = nn.Linear(512, 5, bias=True)
-
-
-
-    # print("Loading")
-    # #model = models.squeezenet.SqueezeNet(num_classes=5)
-    # #model = models.squeezenet1_1(pretrained=True, num_classes=5)
-    #
-    # model = models.squeezenet.SqueezeNet(num_classes=5)
-    # checkpoint = torch.load('/raid/user-data/lscheucher/tmp/pytorch_classifier_models/squeezenet1_1-f364aa15.pth')
-    # model.load_state_dict(checkpoint['model_state_dict'])
-    # #
-    # # print("Loading")
-    # # model = torch.load('/raid/user-data/lscheucher/tmp/pytorch_classifier_models/squeezenet1_1-f364aa15.pth')
-    # print("Loaded")
+    model.fc = nn.Linear(512, args.numclasses, bias=True)
 elif opts.model == 'ResNet18':
 
     model = models.resnet18(pretrained=True)
-    model.fc = nn.Linear(512, 5, bias=True)
-elif opts.model == 'DenseNet169':
+    model.fc = nn.Linear(512, args.numclasses, bias=True)
+elif opts.model == 'ResNet152':
 
     model = models.resnet18(pretrained=True)
-    model.fc = nn.Linear(512, 5, bias=True)
+    Linear(in_features=2048, out_features=args.numclasses, bias=True)
+elif opts.model == 'DenseNet169':
+
+    model = models.densenet169(pretrained=True)
+    model.classifier = nn.Linear(1664, args.numclasses, bias=True)
+
+elif opts.model == 'DenseNet201':
+    model = models.densenet201(pretrained=True)
+    model.classifier = nn.Linear(1920, args.numclasses, bias=True)
 else:
-    raise ValueError("model not supported",opts.model)
+    raise ValueError("model not supported", opts.model)
+
 #device = torch.device("cuda:6" if torch.cuda.is_available() else "cpu")
 device = 'cuda:0'
 model = model.to(device)
@@ -138,10 +141,8 @@ scheduler = lr_scheduler.StepLR(optimizer, step_size=opts.lr_scheduler.step_size
 criterion = nn.CrossEntropyLoss()
 
 plotter  = VisdomLinePlotter(env_name=opts.train_identifier)
-""" ------------------------------------------------------------------------- """
 
 
-""" ------------------------------------------------------------------------- """
 """ Model training """
 num_epochs = 1000
 steps_per_epoch = 40
