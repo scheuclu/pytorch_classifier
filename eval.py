@@ -147,7 +147,7 @@ for inputs, labels, paths  in tqdm(eval_loader):
     all_paths+=paths
     #break
 
-val_annotations = pd.DataFrame(index=all_paths, columns= ['classname', 'pred_classname'], data= [[a,b] for a,b in zip(all_classnames, pred_classnames)])
+val_annotations = pd.DataFrame(index=all_paths, columns= ['classname', 'pred_classname', 'confidence'], data= [[a,b] for a,b in zip(all_classnames, pred_classnames)])
 checkpoint_dir, checkpoint_name = args.checkpoint.rsplit('/', maxsplit=1)
 result_file_path = os.path.join(checkpoint_dir,'val_'+checkpoint_name+'.csv')
 
@@ -155,3 +155,9 @@ val_annotations.to_csv(result_file_path)
 print("Wrote results to", result_file_path)
 
 print("Done")
+
+"""
+imgpath, subidx, classname, predclassname, confidence
+...
+...
+"""

@@ -26,8 +26,9 @@ class LRSchedulerConfig(object):
 class TrainConfig(object):
     def __init__(self, train_config):
         ensure_dict_has_keys("Train", train_config,
-            ["train_identifier", "model", "port", "optimizer", "lr_scheduler", "cross_val_phase", "batchsize"])
+            ["train_identifier", "imageset", "model", "port", "optimizer", "lr_scheduler", "cross_val_phase", "batchsize"])
         self.train_identifier = train_config["train_identifier"]
+        self.imageset = train_config["imageset"]
         self.model = train_config["model"]
         self.batchsize = train_config["batchsize"]
         self.port = train_config["port"]

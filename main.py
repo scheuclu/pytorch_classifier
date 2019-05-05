@@ -31,7 +31,7 @@ parser = argparse.ArgumentParser(description='Train pytorch classifier.')
 
 parser.add_argument('--config',
                     type=str,
-                    default='densenet169_set_0_withother',
+                    default='debug',
                     help='Name of configuration')
 
 parser.add_argument('--port',
@@ -39,10 +39,17 @@ parser.add_argument('--port',
                     default='6065',
                     help='Port for visdom usage')
 
-parser.add_argument('--numclasses',
-                    type=int,
-                    default='6',
-                    help='Number of classes that the network can differentiate')
+
+# parser.add_argument('--imageset',
+#                     type=str,
+#                     default='imageset_5_other_random', #imageset_5, imageset_5_other, imageset_5_other_random
+#                     help='TODO')
+
+# parser.add_argument('--numclasses',
+#                     type=int,
+#                     default='6',
+#                     help='Number of classes that the network can differentiate')
+
 
 
 args = parser.parse_args()
@@ -53,21 +60,37 @@ import os
 #if not os.path.isdir()
 
 
-""" Delete all figures """
-from visdom import Visdom
-viz = Visdom(port=args.port)
-# for env in viz.get_env_list():
-viz.delete_env(opts.train_identifier)
 
 
 
+""" Define appropraite directories for train and validation images"""
 if opts.cross_val_phase ==0:
 
-    traindir = '/raid/user-data/lscheucher/tmp/pytorch_classifier_data/train0'
-    valdir = '/raid/user-data/lscheucher/tmp/pytorch_classifier_data/val0'
+    traindir = os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_data',opts.imageset,'train0')
+    valdir = os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_data',opts.imageset,'val0')
 else:
-    traindir = '/raid/user-data/lscheucher/tmp/pytorch_classifier_data/train1'
-    valdir = '/raid/user-data/lscheucher/tmp/pytorch_classifier_data/val1'
+    traindir = os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_data',opts.imageset,'train1')
+    valdir = os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_data',opts.imageset,'val1')
+
+
+""" Define directory for output """
+#This directory will be used  both for evaluation and for saving the plots
+if not os.path.isdir(os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_checkpoints', opts.imageset)):
+    os.mkdir(os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_checkpoints', opts.imageset))
+outdir = os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_checkpoints', opts.imageset, opts.train_identifier)
+if not os.path.isdir(outdir):
+    os.mkdir(outdir)
+
+
+""" Delete all figures """
+from visdom import Visdom
+visdom_log_path = os.path.join(outdir,opts.train_identifier+".visdom")
+#visdom_log_path = outdir
+print("Saving plots to", visdom_log_path)
+viz = Visdom(port=args.port, log_to_filename=visdom_log_path)
+# for env in viz.get_env_list():
+viz.delete_env(opts.train_identifier)
+viz.log_to_filename = os.path.join(outdir,opts.train_identifier+".visdom")
 
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -111,23 +134,23 @@ dataloaders={
 """ Model, Optimizer, Scheduler"""
 if opts.model == 'SqueezeNet':
     model = models.squeezenet1_0(pretrained=True)
-    model.fc = nn.Linear(512, args.numclasses, bias=True)
+    model.fc = nn.Linear(512, len(train_dataset.classes), bias=True)
 elif opts.model == 'ResNet18':
 
     model = models.resnet18(pretrained=True)
-    model.fc = nn.Linear(512, args.numclasses, bias=True)
+    model.fc = nn.Linear(512, len(train_dataset.classes), bias=True)
 elif opts.model == 'ResNet152':
 
     model = models.resnet18(pretrained=True)
-    Linear(in_features=2048, out_features=args.numclasses, bias=True)
+    Linear(in_features=2048, out_features=len(train_dataset.classes), bias=True)
 elif opts.model == 'DenseNet169':
 
     model = models.densenet169(pretrained=True)
-    model.classifier = nn.Linear(1664, args.numclasses, bias=True)
+    model.classifier = nn.Linear(1664, len(train_dataset.classes), bias=True)
 
 elif opts.model == 'DenseNet201':
     model = models.densenet201(pretrained=True)
-    model.classifier = nn.Linear(1920, args.numclasses, bias=True)
+    model.classifier = nn.Linear(1920, len(train_dataset.classes), bias=True)
 else:
     raise ValueError("model not supported", opts.model)
 
@@ -140,11 +163,12 @@ optimizer = optim.SGD(model.parameters(), lr=opts.optimizer.lr, momentum=opts.op
 scheduler = lr_scheduler.StepLR(optimizer, step_size=opts.lr_scheduler.step_size, gamma=opts.lr_scheduler.gamma)
 criterion = nn.CrossEntropyLoss()
 
-plotter  = VisdomLinePlotter(env_name=opts.train_identifier)
+print("Visdom env name:",opts.train_identifier)
+plotter  = VisdomLinePlotter(env_name=opts.train_identifier, log_filename=visdom_log_path)
 
 
 """ Model training """
-num_epochs = 1000
+num_epochs = 100
 steps_per_epoch = 40
 since = time.time()
 
@@ -167,8 +191,8 @@ for epoch in range(num_epochs):
         if phase == 'val':# and epoch_acc > best_acc:
             #best_model_wts = copy.deepcopy(model.state_dict())
             # save the currently best model to disk
-            torch.save(model.state_dict(), './checkpoints/'+opts.train_identifier+'.'+str(epoch))
-            print("Saved new best checkpoint to disk")
+            torch.save(model.state_dict(), outdir+'/'+str(epoch)+'.pth')
+            print("Saved new best checkpoint to:\n"+outdir+'/'+str(epoch)+'.pth')
 
     print()
 

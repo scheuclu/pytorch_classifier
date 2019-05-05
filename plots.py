@@ -4,10 +4,11 @@ import numpy as np
 
 class VisdomLinePlotter(object):
     """Plots to Visdom"""
-    def __init__(self, env_name='main'):
+    def __init__(self, env_name='main', log_filename='/tmp'):
         self.viz = Visdom(port=6065)
         self.env = env_name
         self.plots = {}
+        self.viz.log_to_filename = log_filename
     def plot(self, var_name, split_name, title_name, x, y):
         if var_name not in self.plots:
             self.plots[var_name] = self.viz.line(X=np.array([x,x]), Y=np.array([y,y]), env=self.env, opts=dict(
