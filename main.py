@@ -9,8 +9,8 @@ from plots import VisdomLinePlotter, plot_epoch_end
 from train import run_epoch
 import time
 import copy
-import py3nvml
-ngpus = py3nvml.grab_gpus(num_gpus=1, gpu_fraction=0.95, gpu_select=range(1,8))
+#import py3nvml
+#ngpus = py3nvml.grab_gpus(num_gpus=1, gpu_fraction=0.95, gpu_select=range(1,8))
 
 # Ignore warnings
 import warnings
@@ -31,7 +31,7 @@ parser = argparse.ArgumentParser(description='Train pytorch classifier.')
 
 parser.add_argument('--config',
                     type=str,
-                    default='debug',
+                    default='squeezenet_0_other_random',
                     help='Name of configuration')
 
 parser.add_argument('--port',
@@ -106,10 +106,13 @@ train_dataset = datasets.ImageFolder(
         normalize,
     ]))
 
-if False:#TODO
-    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+if True:
+    class_sample_count = [len([i for i in train_dataset.imgs if i[1]==classid]) for classid in range(len(train_dataset.classes))] # dataset has 10 class-1 samples, 1 class-2 samples, etc.
+    weights = 1 / torch.Tensor(class_sample_count)
+    train_sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, opts.batchsize)
 else:
     train_sampler = None
+
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=opts.batchsize, shuffle=(train_sampler is None),

@@ -60,14 +60,16 @@ def run_epoch(phase, model, criterion, optimizer, scheduler, dataloader, device)
             running_corrects += torch.sum(preds == labels.data)
             running_wrongs += torch.sum(preds != labels.data)
             # extended statistics
-            for gt in range(5):
-                classname = idx_to_class[gt]
+            for gt, classname in idx_to_class.items():
                 running_class_stats[classname]['TP'] += int(torch.sum((preds == gt) & (labels == gt)))
                 running_class_stats[classname]['TN'] += int(torch.sum((preds != gt) & (labels != gt)))
                 running_class_stats[classname]['FP'] += int(torch.sum((preds == gt) & (labels != gt)))
                 running_class_stats[classname]['FN'] += int(torch.sum((preds != gt) & (labels == gt)))
                 running_class_stats[classname]['num_preds'] += int(torch.sum((preds == gt)))
                 running_class_stats[classname]['num_gt'] += int(torch.sum((labels == gt)))
+
+            #break
+
 
         epoch_loss = running_loss / len(dataloader)
         epoch_acc = float(running_corrects) / (float(running_corrects) + float(running_wrongs) + 1)
