@@ -1,11 +1,11 @@
 
 import torch
 from torchvision import models
-from deprecated.mydataset import MyDataset
+#from deprecated.mydataset import MyDataset
 import pandas as pd
 
 import py3nvml
-ngpus = py3nvml.grab_gpus(num_gpus=1, gpu_fraction=0.95, gpu_select=range(1,8))
+ngpus = py3nvml.grab_gpus(num_gpus=1, gpu_fraction=0.95, gpu_select=range(0,8))
 device = 'cuda:0'
 
 pickle_file = '/raid/user-data/lscheucher/projects/bounding_box_classifier/full_object_index.pickle'
@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description='Train pytorch classifier.')
 
 parser.add_argument('--config',
                     type=str,
-                    default='resnet_set_0',
+                    default='resnet_0_other_random',
                     help='Name of configuration')
 
 parser.add_argument('--port',
@@ -34,9 +34,14 @@ parser.add_argument('--port',
                     default='6065',
                     help='Port for visdom usage')
 
+parser.add_argument('--num_classes',
+                    type=int,
+                    default=6,
+                    help='TODO')
+
 parser.add_argument('--checkpoint',
                     type=str,
-                    default='/raid/user-data/lscheucher/tmp/pytorch_classifier/checkpoints/resnet_set_0.498',
+                    default='/raid/user-data/lscheucher/tmp/pytorch_classifier_checkpoints/imageset_5_other_random/resnet_set_0_other_random/18.pth',
                     help='Path to the checkpoint')
 
 parser.add_argument('--resultfile',
@@ -46,32 +51,41 @@ parser.add_argument('--resultfile',
 
 
 args = parser.parse_args()
-opts = edict(configs[args.config])
+opts = configs[args.config]
 
 
 
 """ Load model from path """
 
 """ Model, Optimizer, Scheduler"""
+""" Model, Optimizer, Scheduler"""
 if opts.model == 'SqueezeNet':
-
     model = models.squeezenet1_0(pretrained=True)
-    model.fc = nn.Linear(512, 5, bias=True)
-
+    model.fc = nn.Linear(512, args.num_classes, bias=True)
 elif opts.model == 'ResNet18':
 
     model = models.resnet18(pretrained=True)
-    model.fc = nn.Linear(512, 5, bias=True)
-elif opts.model == 'DenseNet169':
+    model.fc = nn.Linear(512, args.num_classes, bias=True)
+elif opts.model == 'ResNet152':
 
     model = models.resnet18(pretrained=True)
-    model.fc = nn.Linear(512, 5, bias=True)
+    #Linear(in_features=2048, out_features=args.num_classes, bias=True)
+elif opts.model == 'DenseNet169':
+
+    model = models.densenet169(pretrained=True)
+    model.classifier = nn.Linear(1664, args.num_classes, bias=True)
+
+elif opts.model == 'DenseNet201':
+    model = models.densenet201(pretrained=True)
+    model.classifier = nn.Linear(1920, args.num_classes, bias=True)
 else:
-    raise ValueError("model not supported",opts.model)
+    raise ValueError("model not supported", opts.model)
+
 
 model.load_state_dict(torch.load(args.checkpoint))
 model.eval()
 model = model.to(device)
+model.eval()
 
 
 """ Create validation dataloader """
@@ -80,9 +94,20 @@ from torchvision import datasets, models, transforms
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
 
-eval_dir = '/raid/user-data/lscheucher/tmp/pytorch_classifier_data/val0'
+""" Define appropraite directories for train and validation images"""
+if opts.cross_val_phase ==0:
+
+    traindir = os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_data',opts.imageset,'train0')
+    valdir = os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_data',opts.imageset,'val0')
+else:
+    traindir = os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_data',opts.imageset,'train1')
+    valdir = os.path.join('/raid/user-data/lscheucher/tmp/pytorch_classifier_data',opts.imageset,'val1')
+
+
+
+
 eval_dataset = ImageFolderWithPaths(
-    eval_dir,
+    valdir,
     transforms.Compose([
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
