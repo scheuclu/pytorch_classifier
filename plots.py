@@ -58,4 +58,42 @@ def plot_epoch_end(plotter, phase, epoch, epoch_acc, epoch_loss, lr, running_cla
     return
 
 
+import pandas as pd
+import numpy as np
+import plotly.graph_objs as go
+import plotly
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 
+def bar_chart(val_annotations, outfile):
+    classnames = set(val_annotations.pred_classname)
+
+    gt2pred_abs = pd.DataFrame(index=classnames, columns=classnames)
+    gt2pred_rel = pd.DataFrame(index=classnames, columns=classnames)
+
+
+    for gt_classname in classnames:
+        for pred_classname in classnames:
+            gt2pred_abs.loc[gt_classname][pred_classname] = sum((val_annotations.classname == gt_classname) &
+                                                                (val_annotations.pred_classname == pred_classname))
+    for pred_classname in classnames:
+        gt2pred_rel[pred_classname] = gt2pred_abs[pred_classname] / sum(gt2pred_abs[pred_classname])
+
+    data = []
+
+    for classname in classnames:
+        trace = go.Bar(
+            x=gt2pred_rel.columns,
+            y=gt2pred_rel.loc[classname],
+            # text=gt2pred_abs[classname],
+            textposition='auto',
+            name=classname
+        )
+        data.append(trace)
+
+    layout = go.Layout(
+        barmode='stack',
+        title='Prediction statistics',
+    )
+
+    fig = go.Figure(data=data, layout=layout)
+    plot(fig, filename=outfile, auto_open=False)
