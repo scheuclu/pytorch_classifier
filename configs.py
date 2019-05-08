@@ -34,16 +34,16 @@ configs={
 
     "squeezenet_0_other": TrainConfig(numclass_5_other_configs.squeezenet_0_withother),
     "squeezenet_1_other": TrainConfig(numclass_5_other_configs.squeezenet_1_withother),
-    "resnet_set_0_other": TrainConfig(numclass_5_other_configs.resnet_set_0_withother),
-    "resnet_set_1_other": TrainConfig(numclass_5_other_configs.resnet_set_1_withother),
-    "densenet169_set_0_other": TrainConfig(numclass_5_other_configs.densenet169_set_0_withother),
-    "densenet169_set_1_other": TrainConfig(numclass_5_other_configs.densenet169_set_1_withother),
+    "resnet_0_other": TrainConfig(numclass_5_other_configs.resnet_set_0_withother),
+    "resnet_1_other": TrainConfig(numclass_5_other_configs.resnet_set_1_withother),
+    "densenet169_0_other": TrainConfig(numclass_5_other_configs.densenet169_set_0_withother),
+    "densenet169_1_other": TrainConfig(numclass_5_other_configs.densenet169_set_1_withother),
 
     "squeezenet_0_other_random": TrainConfig(numclass_5_other_random_configs.squeezenet_0_other_random),
     "squeezenet_1_other_random": TrainConfig(numclass_5_other_random_configs.squeezenet_1_other_random),
-    "resnet_set_0_other_random": TrainConfig(numclass_5_other_random_configs.resnet_set_0_other_random),
-    "resnet_set_1_other_random": TrainConfig(numclass_5_other_random_configs.resnet_set_1_other_random),
-    "densenet169_set_0_other_random": TrainConfig(numclass_5_other_random_configs.densenet169_set_0_other_random),
-    "densenet169_set_1_other_random": TrainConfig(numclass_5_other_random_configs.densenet169_set_1_other_random),
+    "resnet_0_other_random": TrainConfig(numclass_5_other_random_configs.resnet_set_0_other_random),
+    "resnet_1_other_random": TrainConfig(numclass_5_other_random_configs.resnet_set_1_other_random),
+    "densenet169_0_other_random": TrainConfig(numclass_5_other_random_configs.densenet169_set_0_other_random),
+    "densenet169_1_other_random": TrainConfig(numclass_5_other_random_configs.densenet169_set_1_other_random),
 }
 

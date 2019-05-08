@@ -106,10 +106,13 @@ train_dataset = datasets.ImageFolder(
         normalize,
     ]))
 
-if True:
+import math
+if False:#TODO WeightedRandomSampler not working
     class_sample_count = [len([i for i in train_dataset.imgs if i[1]==classid]) for classid in range(len(train_dataset.classes))] # dataset has 10 class-1 samples, 1 class-2 samples, etc.
+    #class_sample_count = [math.sqrt(i) / min(class_sample_count) for i in class_sample_count]
     weights = 1 / torch.Tensor(class_sample_count)
-    train_sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, opts.batchsize)
+    print(len(train_dataset),"len(train_dataset)")
+    train_sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, int(len(train_dataset)/opts.batchsize)-1, replacement=True)
 else:
     train_sampler = None
 
