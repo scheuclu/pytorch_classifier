@@ -9,8 +9,8 @@ from plots import VisdomLinePlotter, plot_epoch_end
 from train import run_epoch
 import time
 import copy
-#import py3nvml
-#ngpus = py3nvml.grab_gpus(num_gpus=1, gpu_fraction=0.95, gpu_select=range(1,8))
+import py3nvml
+ngpus = py3nvml.grab_gpus(num_gpus=1, gpu_fraction=0.95, gpu_select=range(0,8))
 
 # Ignore warnings
 import warnings
@@ -86,7 +86,7 @@ if not os.path.isdir(outdir):
 from visdom import Visdom
 visdom_log_path = os.path.join(outdir,opts.train_identifier+".visdom")
 #visdom_log_path = outdir
-print("Saving plots to", visdom_log_path)
+print("Saving visdom logs to", visdom_log_path)
 viz = Visdom(port=args.port, log_to_filename=visdom_log_path)
 # for env in viz.get_env_list():
 viz.delete_env(opts.train_identifier)
@@ -170,7 +170,7 @@ scheduler = lr_scheduler.StepLR(optimizer, step_size=opts.lr_scheduler.step_size
 criterion = nn.CrossEntropyLoss()
 
 print("Visdom env name:",opts.train_identifier)
-plotter  = VisdomLinePlotter(env_name=opts.train_identifier, log_filename=visdom_log_path)
+plotter  = VisdomLinePlotter(env_name=opts.train_identifier, plot_path=outdir)
 
 
 """ Model training """
@@ -192,6 +192,7 @@ for epoch in range(num_epochs):
         lr = optimizer.param_groups[0]['lr']
         plot_epoch_end(plotter=plotter, phase=phase, epoch=epoch, epoch_acc=epoch_acc, epoch_loss=epoch_loss,
                        lr=lr, running_class_stats=running_class_stats)
+        plotter.save_plots()
 
         # deep copy the model
         if phase == 'val':# and epoch_acc > best_acc:

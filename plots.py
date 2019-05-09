@@ -1,14 +1,19 @@
 from visdom import Visdom
 import numpy as np
 #from configs import index2name, name2index
+import plotly.graph_objs as go
+import os
+import json
 
 class VisdomLinePlotter(object):
     """Plots to Visdom"""
-    def __init__(self, env_name='main', log_filename='/tmp'):
+    def __init__(self, env_name='main', plot_path='/tmp'):
         self.viz = Visdom(port=6065)
         self.env = env_name
         self.plots = {}
-        self.viz.log_to_filename = log_filename
+        self.plot_path = plot_path
+        #self.viz.log_to_filename = log_filename
+
     def plot(self, var_name, split_name, title_name, x, y):
         if var_name not in self.plots:
             self.plots[var_name] = self.viz.line(X=np.array([x,x]), Y=np.array([y,y]), env=self.env, opts=dict(
@@ -19,6 +24,17 @@ class VisdomLinePlotter(object):
             ))
         else:
             self.viz.line(X=np.array([x]), Y=np.array([y]), env=self.env, win=self.plots[var_name], name=split_name, update = 'append')
+
+    def save_plots(self):
+        windowstring = self.viz.get_window_data(env=self.env)
+        windowdict = json.loads(windowstring)
+        for windowname, windowcontent in windowdict.items():
+            data  = [{k:datapoint[k] for k in ['x','y','type','name', 'mode']} for datapoint in windowcontent['content']['data']]
+            layout = windowcontent['content']['layout']
+            plotlyfig = dict(data=data, layout=layout)
+            plot_path = os.path.join(self.plot_path,windowcontent['title']+'.html')
+            print("Saving plot to:", plot_path)
+            plot(plotlyfig, filename=os.path.join(self.plot_path,windowcontent['title']+'.html'), auto_open=False)
 
 
 
@@ -45,16 +61,16 @@ def plot_epoch_end(plotter, phase, epoch, epoch_acc, epoch_loss, lr, running_cla
         print(class_acc, class_prec, class_recall, "---")
 
         # plotter_acc.plot(var_name=key, split_name=phase, title_name='class_acc', x=epoch, y=val)
-        plotter.plot(var_name='acc_' + phase, split_name=classname, title_name='class_acc', x=epoch,
+        plotter.plot(var_name='acc_' + phase, split_name=classname, title_name='class_acc_' + phase, x=epoch,
                      y=class_acc)
-        plotter.plot(var_name='prec_' + phase, split_name=classname, title_name='class_prec', x=epoch,
+        plotter.plot(var_name='prec_' + phase, split_name=classname, title_name='class_prec_' + phase, x=epoch,
                      y=class_prec)
-        plotter.plot(var_name='recall_' + phase, split_name=classname, title_name='class_recall', x=epoch,
+        plotter.plot(var_name='recall_' + phase, split_name=classname, title_name='class_recall_' + phase, x=epoch,
                      y=class_recall)
         plotter.plot(var_name='num_preds_' + phase, split_name=classname,
-                     title_name='num_preds_', x=epoch, y=running_class_stats[classname]['num_preds'])
+                     title_name='num_preds_' + phase, x=epoch, y=running_class_stats[classname]['num_preds'])
         plotter.plot(var_name='num_gt_' + phase, split_name=classname,
-                     title_name='num_gt_', x=epoch, y=running_class_stats[classname]['num_gt'])
+                     title_name='num_gt_' + phase, x=epoch, y=running_class_stats[classname]['num_gt'])
     return
 
 
